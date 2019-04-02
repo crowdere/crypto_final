@@ -1,20 +1,84 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import vectors
+import random
+import hashlib
 
 x_pts=[]
 y_pts=[]
-A = 0;
-B = 0;
-P = 0;
+A = 0
+B = 0
+P = 0
+
+def dsadecrypt(hm,r,s,g,Q_):
+    n = len(x_pts)
+    #compute inverse of s mod n
+    s_inv = 0
+    for x in range(n):
+        if x * s % n == 1:
+            s_inv = x
+    print('S_INV -> ',s_inv)
+    #compute w
+    w = s_inv % n
+    #compute u
+    u = (hm * w) % n
+    #compute v
+    v = (r * w) % n
+    #compute X
+    uG = addp2p(u,g)
+    vQ = addp2p(v,Q_)
+    result = add_ecp(uG,vQ)
+    print(result.x % n)
+
+def dsa():
+    #generate hash of message
+    m = 184921
+    hm = hash(m) % 256
+    print('H(M) ->',hm)
+    #calculate n (number of points on plot)
+    n = len(x_pts)
+    print('N -> {0}'.format(n))
+    #find random point on plot
+    g = vectors.Point(3,10,0)
+    #SENDER selects private key d
+    d = 3
+    print('D ->',d)
+    #choose random K value
+    k = random.randint(1,24)
+    print('K ->',k)
+    #compute dG (Q)
+    Q_ = addp2p(d,g)
+    print('Q -> ',Q_)
+    #compute kG (P)
+    P_ = addp2p(k,g)
+    print('KG ->', P_)
+    #compute r
+    r = P_.x % n
+    print('R ->', r)
+    #compute s
+    k_inv = 0
+    #find inverse of k mod n
+    for x in range(n):
+        if x * k % n == 1:
+            k_inv = x
+    print('K_INV ->',k_inv)
+    s = k_inv * (hm + (d*r)) % n
+    print('S ->',s)
+    dsadecrypt(hm,r,s,g,Q_)
 
 def addp2p(i,p):
     q = p
     r = add_ecp(p,q)
-    print(r)
+    p_list = []
+    p_list.append(p)
+    print('{0} {1}'.format('1',p))
+    for x in range(1,i):
+        y = add_ecp(p_list[x-1],p_list[x-x])
+        p_list.append(y)
+        print(x+1,y)
+    return p_list[i-1]
 
 def checkPoint(p):
-    print(p)
     for x in range(len(x_pts)):
         if (x_pts[x] == p.x and y_pts[x] == p.y):
             return (x_pts[x] == p.x and y_pts[x] == p.y)
@@ -30,8 +94,8 @@ def add_ecp(p,q):
         r = vectors.Point(Xr,Yr,0)
         if(checkPoint(r)):
             #annotation = "({:d},{:d}) + ({:d},{:d}) = ({:d},{:d})".format(xp, yp, xq,yq,Xr,Yr)
-            print(r.x)
-            print(r.y)
+            #print(r.x)
+            #print(r.y)
             plt.plot(r.x, r.y, "or")
             return r
         else:
@@ -45,9 +109,8 @@ def get_delta(p,q):
         #calculate same point delta using differiential calculus
         num = (3 * pow(p.x, 2) + A) % P
         den = (2*p.y)
-        r1 = den / num
-        r2 = get_Inverse(r1)
-        λ = 1*(r2) % P
+        r2 = get_Inverse(den)
+        λ = num*(r2) % P
         #λ = ( (3* pow(p.x,2) + A) / (2*p.y))
     else:
         #calculate delta with rise over run
@@ -97,15 +160,13 @@ def plot_ec(p,a,b ):
     return plt
 
 # plot ec: Ep(A,B) format and set global A and B for other functions
-plot_ec(11,1,1)
-#Print Globals
-#print(P)
-#print(A)
-#print(B)
-p = vectors.Point(3,8,0)
-q = vectors.Point(3,8,0)
-add_ecp(p,q)   # Return same
-#p = vectors.Point(3,10,0)
-#addp2p(2,p)
+plot_ec(23,1,1)
+#
+#p = vectors.Point(3,3,0)
+#q = vectors.Point(3,8,0)
+#print(add_ecp(p,q))   # Return same
+p = vectors.Point(0,10,0)
+#addp2p(6,p)
+dsa()
 #display the graphs
 plt.show()
